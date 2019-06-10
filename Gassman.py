@@ -614,13 +614,13 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
 
     f, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, sharey=False)
 
-    ax1.plot(SP, depth, 'k')
+    ax1.plot(SP, depth, 'r')
     ax1.set_xlabel('SP or GR')
     ax1.set_ylabel('Depth (Ft)')
     ax1.invert_yaxis()
     ax1.legend(['SP or GR'], loc=9, bbox_to_anchor=(0.5, 1.15))
 
-    ax2.plot(DT_edited, depth, 'r')
+    ax2.plot(DT_edited, depth, 'k')
     ax2.set_xlabel('dt (s)')
     ax2.invert_yaxis()
     ax2.legend(['Sonic'], loc=9, bbox_to_anchor=(0.5, 1.15))
