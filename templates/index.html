@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Gassman Fluid subsitution</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename = 'css/styles.css') }}">
+</head>
+<body>
+    <div class="loading" id="loading">Loading&#8230;</div>
+    <div>
+        <nav class="navbar navbar-dark bg-success text-white justify-content-between">
+            <a class="navbar-brand">Rock Physics</a>
+        </nav>
+    </div>
+    <div class="clearfix"></div>
+    <div class="container">
+            <div class="row m-t-15">
+                <div class="col-md-12">
+                    <div class="block-container">  
+                        <div class="block-header">
+                            <span style="font-weight:bold;">Gassman Fluid Subsitution</span>
+                            <hr/>
+                            <div>
+                                <p style="margin-left:20px;">
+                                    This site models how rock and fluid properties affect their velocity, density, and ultimately 
+                                    seismic response. If you’re interested in more technical information,  a mathematical 
+                                    formulation of this workflow is presented in Smith et al., 2003.  
+                                    <a href="https://doi.org/10.1190/1.1567211" target="_blank">https://doi.org/10.1190/1.1567211</a>
+                                    <br/><br/>
+                                    To get started, upload a CSV file with depth (ft), SP or GR, and a sonic log (dt microsec/ft). 
+                                    Don’t worry, this is a volunteer project for the rock physics community and none of 
+                                    the data is stored.<br/>
+                                    The first line should have columns labels and the second line should have the first data row.<br/><br/>
+                                    
+                                    <b>For Example:</b><br/>
+                                    
+                                    Depth(ft),SP,DT (microsec/ft)<br/>
+                                    8000,-120,105<br/>
+                                    8000.5,-120,103.2<br/><br/>
+
+                                    If you don’t want to upload a log, an example is provided as a default. At the end, you’ll get graphs of primary velocity (km/s), shear velocity (km/s), bulk modulus (Gpa), and zero-offset synthetic seismograms. This data can be downloaded as well. 
+                                    <br/><br/>
+                                    Please contact me with how you’re using this site or with feedback.  Thanks
+                                    <br/><br/>
+                                    Jacob Anderson
+                                    <br/>
+                                    <b>jacob.anderson10@gmail.com</b>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <div class="row m-t-15">
+            <div class="col-md-12">
+                <div class="block-container">  
+                    <div class="block-header">
+                        <form id="newForm" method="post" enctype="multipart/form-data">
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="csv_file" class="mr-sm-2">Upload CSV File:</label>
+                                    <input type="file" class="form-control mb-2 mr-sm-2" id="csv_file" name="csv_file" style="height: 43px;">
+                                </div>
+                            </div>
+                            <span style="font-weight:bold;">Calculating Voight Reuss Mixing</span>
+                            <hr/>
+                            <div class="form-row">
+                                <div class="form-group col-md-3">
+                                    <label for="calculation_method">Calculation Method&nbsp;<span class="text-red">*</span></label>
+                                    <select name="calculation_method" id="calculation_method" class="form-control mb-2 mr-sm-2" onchange="onFieldChange('calculation_method')">
+                                        <option value="">Select</option>
+                                        <option value="Gardner">Gardner</option>
+                                        <option value="Castagna_1">Castagna 1</option>
+                                        <option value="Castagna_2">Castagna 2</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="K0_quartz" class="mr-sm-2">Bulk Modulus Quartz (K0 GPa, default=37):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K0_quartz" name="K0_quartz" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K0_quartz')">
+                                </div>
+                                <div class="form-group col-md-5">
+                                    <label for="K0_plag_feldspar" class="mr-sm-2">Bulk Modulus Plag Feldspar (K0 GPa, default=75.6):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K0_plag_feldspar" name="K0_plag_feldspar" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K0_plag_feldspar')">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="K0_dolomite" class="mr-sm-2">Bulk Modulus Dolomite (K0 GPa, default=94.6):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K0_dolomite" name="K0_dolomite" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K0_dolomite')">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="K0_clay" class="mr-sm-2">Bulk Modulus Clay (K0 Gpa, default=25):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K0_clay" name="K0_clay" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K0_clay')">
+                                </div>
+                            </div>
+                            <hr/>
+                                <span style="font-weight:bold;">Calculating Minteralogy K Matrix 
+                                    <!-- &nbsp;&nbsp;<span class="fa fa-info-circle" title="Add Value as Simple Number not Percentage converted! We will convert this value in percentage in Backend."></span> -->
+                                </span>
+                            <hr/>
+                            <div class="form-row">
+                                <div class="form-group col-md-3">
+                                    <label for="Percent_quartz" class="mr-sm-2">Fraction Quartz:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Percent_quartz" name="Percent_quartz" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Percent_quartz')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="Percent_plag_feldspar" class="mr-sm-2">Fraction Plag Feldspar:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Percent_plag_feldspar" name="Percent_plag_feldspar" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Percent_plag_feldspar')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="Percent_dolomite" class="mr-sm-2">Fraction Dolomite:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Percent_dolomite" name="Percent_dolomite" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Percent_dolomite')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="Percent_clay" class="mr-sm-2">Fraction Clay:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Percent_clay" name="Percent_clay" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Percent_clay')">
+                                </div>
+                            </div>
+                            <hr/>
+                                <span style="font-weight:bold;">Fluid Properties</span>
+                            <hr/>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="K_brine" class="mr-sm-2">Bulk Modulus of Pore Fluid (GPa, default=3.1):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K_brine" name="K_brine" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K_brine')">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="K_gas" class="mr-sm-2">Bulk Modulus of Gas (GPa, default=0.25):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="K_gas" name="K_gas" onkeypress="return isNumberKey(event)" onchange="onFieldChange('K_gas')">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="rho_brine" class="mr-sm-2">Density of Pore Fluid (g/cc, default=1):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="rho_brine" name="rho_brine" onkeypress="return isNumberKey(event)" onchange="onFieldChange('rho_brine')">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="rho_gas" class="mr-sm-2">Density of Gas (g/cc, default = 0.25):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="rho_gas" name="rho_gas" onkeypress="return isNumberKey(event)" onchange="onFieldChange('rho_gas')">
+                                </div>
+                                <!-- <div class="form-group col-md-4">
+                                    <label for="Sw" class="mr-sm-2">SW:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Sw" name="Sw" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Sw')">
+                                </div> -->
+                            </div>
+                            <hr/>
+                                <span style="font-weight:bold;">Rock Properties</span>
+                            <hr/>
+                            <div class="form-row">
+                                <div class="form-group col-md-4">
+                                    <label for="Porosity" class="mr-sm-2">Porosity (%):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Porosity" name="Porosity" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Porosity')">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="rhob_rock" class="mr-sm-2">Density of Rock (g/cc, default=2.3):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="rhob_rock" name="rhob_rock" onkeypress="return isNumberKey(event)" onchange="onFieldChange('rhob_rock')">
+                                </div>
+                                <div class="form-group col-md-4">
+                                    <label for="grain_density" class="mr-sm-2">Grain Density (g/cc, default=2.65):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="grain_density" name="grain_density" onkeypress="return isNumberKey(event)" onchange="onFieldChange('grain_density')">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="Vp_rock" class="mr-sm-2">Primary Velocity of Rock (km/s, default=3.5):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Vp_rock" name="Vp_rock" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Vp_rock')">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="Vs_rock" class="mr-sm-2">Shear Velocity of Rock (km/s, default=1.8):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="Vs_rock" name="Vs_rock" onkeypress="return isNumberKey(event)" onchange="onFieldChange('Vs_rock')">
+                                </div>
+                                
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-12">
+                                    <label for="sp_shale_cutoff" class="mr-sm-2">SP or GR Cutoff (values less than this number are sand, greater than are shale, default=50):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="sp_shale_cutoff" name="sp_shale_cutoff" onkeypress="return isNumberKey(event)" onchange="onFieldChange('sp_shale_cutoff')">
+                                </div>
+                            </div>
+                            <hr/>
+                            <span style="font-weight:bold;">Seismic Constants</span>
+                            <hr/>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="wavelet_type">Wavelet Type&nbsp;<span class="text-red">*</span></label>
+                                    <select name="wavelet_type" id="wavelet_type" class="form-control mb-2 mr-sm-2" onchange="onFieldChange('wavelet_type');showFrequency();">
+                                        <option value="">Select</option>
+                                        <option value="Ricker">Ricker</option>
+                                        <option value="Ormsby">Ormsby</option>
+                                        <option value="Klauder">Klauder</option>
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-6" id="ricker">
+                                    <label for="ricker_frequency" class="mr-sm-2">Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="ricker_frequency" name="ricker_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('ricker_frequency')">
+                                </div>
+                            </div>
+                            <div class="form-row" id="ormsby">
+                                <div class="form-group col-md-3">
+                                    <label for="low_cut_frequency" class="mr-sm-2">Low Cut Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="low_cut_frequency" name="low_cut_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('low_cut_frequency')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="low_pass_frequency" class="mr-sm-2">Low Pass Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="low_pass_frequency" name="low_pass_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('low_pass_frequency')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="high_pass_frequency" class="mr-sm-2">High Pass Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="high_pass_frequency" name="high_pass_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('high_pass_frequency')">
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <label for="high_cut_frequency" class="mr-sm-2">High Cut Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="high_cut_frequency" name="high_cut_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('high_cut_frequency')">
+                                </div>
+                            </div>
+                            <div class="form-row" id="klauder">
+                                <div class="form-group col-md-6">
+                                    <label for="upper_frequency" class="mr-sm-2">Upper Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="upper_frequency" name="upper_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('upper_frequency')">
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="lower_frequency" class="mr-sm-2">Lower Frequency:&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="lower_frequency" name="lower_frequency" onkeypress="return isNumberKey(event)" onchange="onFieldChange('lower_frequency')">
+                                </div>
+                            </div>
+                            <div class="form-row" id="klauder">
+                                <div class="form-group col-md-12">
+                                    <label for="sampling_interval_dt" class="mr-sm-2">Sampling Interval (sec):&nbsp;<span class="text-red">*</span></label>
+                                    <input type="text" class="form-control mb-2 mr-sm-2" id="sampling_interval_dt" name="sampling_interval_dt" onkeypress="return isNumberKey(event)" onchange="onFieldChange('sampling_interval_dt')">
+                                </div>
+                            </div>
+                            <div class="form-inline" method="post">
+                                <button class="btn btn-success mb-2 pull-right" >Submit</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="graph">
+            <div class="row">
+                <div class="col-lg-12 col-md-12 col-sm-12">
+                    <div class="block-container">  
+                        <div class="block-header">
+                            <span style="font-weight:bold;">Graph</span>
+                            <a href="{{url_for('static', filename='csv/las_export.csv')}}" id="file_url" class="pull-right">
+                                <button class="btn btn-info">Download CSV</button>
+                            </a>
+                        </div>
+                        <div class="block-body current_status">
+                            <div>
+                                <img src="{{imgURL}}" id="graph_one_image" class="graph_img"/>
+                            </div>
+                            <hr/>
+                            <div>
+                                <img src="{{imgURL}}" id="graph_two_image" class="graph_img"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="{{ url_for('static', filename = 'js/app.js') }}"></script>
+</html>
