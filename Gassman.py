@@ -448,6 +448,9 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
     # This starts an adaptation of a wavelet from
     # https://github.com/rowanc1/Seismogram
 
+    # This starts an adaptation of a wavelet from
+    # https://github.com/rowanc1/Seismogram
+
     ## WAVELET DEFINITIONS
     pi = np.pi
 
@@ -499,7 +502,7 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
 
     class Seis:
         def __init__(self, pvel, D, wavelet_type, freq, dt):
-            self.pvel = pvel
+            self.pvel = pvel  # units are coming in as m/s
             self.D = D
             self.wavelet_type = wavelet_type
             self.freq = freq
@@ -510,14 +513,16 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
 
             for x, index in enumerate(self.pvel):
                 if x > 0:
-                    RC.append((self.pvel[x - 1] - self.pvel[x]) / (self.pvel[x - 1] + self.pvel[x]))
+                    RC.append(((self.pvel[x - 1] * 3.28084) - (self.pvel[x] * 3.28084)) / (
+                                (self.pvel[x - 1] * 3.28084) + (self.pvel[x] * 3.28084)))
 
             twt = []
             for x, index in enumerate(self.pvel):
                 if x == 0:
-                    twt.append(2 * self.D[x] / self.pvel[x])
+                    # twt.append(2 * self.D[x] / (self.pvel[x]*3.28084)) # velocity units are converted to ft
+                    twt.append(0)
                 else:
-                    twt.append((2 * (self.D[x] - self.D[x - 1]) / self.pvel[x]) + twt[x - 1])
+                    twt.append((2 * (self.D[x] - self.D[x - 1]) / (self.pvel[x] * 3.28084)) + twt[x - 1])
 
             R = np.zeros(round(twt[-1] / self.dt) + 10)
 
@@ -538,6 +543,7 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
             tseis = np.min(twav) + self.dt * np.arange(len(seis))
             index = np.logical_and(tseis >= np.min(twt), tseis <= np.max(twt))
             tseis = tseis[index]
+
             seis = seis[index]
             self.Seis = seis
             self.tSeis = tseis
@@ -566,44 +572,60 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
 
     # Making the plot
 
-    f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=True)
+    f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharey=False)
 
     ax1.plot(SP, depth)
+    ax1.invert_yaxis()
+    # ax1.set_title('SP',fontsize=10)
     ax1.set_xlabel('SP or GR')
     ax1.set_ylabel('Depth (Ft)')
-    ax1.invert_yaxis()
+
     ax1.legend(['SP or GR'], loc=9, bbox_to_anchor=(0.5, 1.25))
 
     if calculation_method == 'Gardner':
+        # plt.gca().invert_yaxis()
         ax2.plot(Vp_Gardner_0SW.Vp_kms, depth, Vp_Gardner_50SW.Vp_kms, depth, Vp_Gardner_100SW.Vp_kms, depth)
         ax3.plot(Vs_Gardner_0SW.Vs_kms, depth, Vs_Gardner_50SW.Vs_kms, depth, Vs_Gardner_100SW.Vs_kms, depth)
+        # ax3.plot(Ksat_Gardner_0SW.Ksat,depth,Ksat_Gardner_60SW.Ksat,depth,Ksat_Gardner_100SW.Ksat,depth)
         ax4.plot(Ksat_Gardner_0SW.Ksat, depth, Ksat_Gardner_50SW.Ksat, depth, Ksat_Gardner_100SW.Ksat, depth)
 
     elif calculation_method == 'Castagna_1':
+        # plt.gca().invert_yaxis()
         ax2.plot(Vp_Castagna_1_0SW.Vp_kms, depth, Vp_Castagna_1_50SW.Vp_kms, depth, Vp_Castagna_1_100SW.Vp_kms, depth)
         ax3.plot(Vs_Castagna_1_0SW.Vs_kms, depth, Vs_Castagna_1_50SW.Vs_kms, depth, Vs_Castagna_1_100SW.Vs_kms, depth)
+        # ax3.plot(Ksat_Castagna_1_0SW.Ksat,depth,Ksat_Castagna_1_60SW.Ksat,depth,Ksat_Castagna_1_100SW.Ksat,depth)
         ax4.plot(Ksat_Castagna_1_0SW.Ksat, depth, Ksat_Castagna_1_50SW.Ksat, depth, Ksat_Castagna_1_100SW.Ksat, depth)
     else:
+        # plt.gca().invert_yaxis()
         ax2.plot(Vp_Castagna_2_0SW.Vp_kms, depth, Vp_Castagna_2_50SW.Vp_kms, depth, Vp_Castagna_2_100SW.Vp_kms, depth)
         ax3.plot(Vs_Castagna_2_0SW.Vs_kms, depth, Vs_Castagna_2_50SW.Vs_kms, depth, Vs_Castagna_2_100SW.Vs_kms, depth)
+        # ax3.plot(Ksat_Castagna_2_0SW.Ksat, depth, Ksat_Castagna_2_60SW.Ksat, depth, Ksat_Castagna_2_100SW.Ksat, depth)
         ax4.plot(Ksat_Castagna_2_0SW.Ksat, depth, Ksat_Castagna_2_50SW.Ksat, depth, Ksat_Castagna_2_100SW.Ksat, depth)
 
     ax2.legend(['Vp 0% Sw', 'Vp 50% Sw', 'Vp 100% Sw'], loc=9, bbox_to_anchor=(0.5, 1.25))
+    # ax2.set_title('Primary Velocity',fontsize=10)
     ax2.set_xlabel('Velocity (km/s)')
+    # ax2.set_ylabel('Depth (ft)')
     ax2.invert_yaxis()
     ax2.get_yaxis().set_visible(False)
 
     ax3.legend(['Vs 0% Sw', 'Vs 50% Sw', 'Vs 100% Sw'], loc=9, bbox_to_anchor=(0.5, 1.25))
+    # ax3.set_title('Shear Velocity',fontsize=10)
     ax3.set_xlabel('Velocity (km/s)')
+    # ax2.set_ylabel('Depth (ft)')
     ax3.invert_yaxis()
     ax3.get_yaxis().set_visible(False)
 
     ax4.legend(['Ksat 0% Sw', 'Ksat 50% Sw', 'Ksat 100% Sw'], loc=9, bbox_to_anchor=(0.5, 1.25))
+    # ax4.set_title('Bulk Modulus',fontsize=10)
     ax4.set_xlabel('Bulk Modulus (GPa)')
+    # ax2.set_ylabel('Depth (ft)')
     ax4.invert_yaxis()
     ax4.get_yaxis().set_visible(False)
     plt.tight_layout()
     plt.show()
+
+
 
     img = io.BytesIO()
     plt.savefig(img, format='png')
@@ -614,50 +636,73 @@ def getGraph(calculation_method, SP_shale_cutoff, K0_quartz, K0_plag_feldspar, K
 
     f, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, sharey=False)
 
-    ax1.plot(SP, depth, 'r')
+    ax1.plot(SP, depth, 'k')
+    # ax1.set_title('SP',fontsize=10)
     ax1.set_xlabel('SP or GR')
     ax1.set_ylabel('Depth (Ft)')
     ax1.invert_yaxis()
     ax1.legend(['SP or GR'], loc=9, bbox_to_anchor=(0.5, 1.15))
 
-    ax2.plot(DT_edited, depth, 'k')
+    ax2.plot(DT_edited, depth, 'r')
+    # ax2.set_title('Sonic',fontsize=10)
     ax2.set_xlabel('dt (s)')
     ax2.invert_yaxis()
     ax2.legend(['Sonic'], loc=9, bbox_to_anchor=(0.5, 1.15))
     ax2.get_yaxis().set_visible(False)
+    # color='tab:blue'
+    # plt.gca().invert_yaxis()
     ax3.plot(Seis_0SW.Seis, Seis_0SW.tSeis, 'y')
+    # ax3.set_title('0% Sw',fontsize=10)
     ax3.legend(['0% Sw'], loc=9, bbox_to_anchor=(0.5, 1.15))
     ax3.get_yaxis().set_visible(False)
     ax3.set_xlabel('Amplitude', fontsize=9)
     ax3.xaxis.set_major_locator(plt.MaxNLocator(2))
     ax3.set_autoscale_on(False)
     plt.ylim(top=max(Seis_0SW.tSeis[-1], Seis_50SW.tSeis[-1], Seis_100SW.tSeis[-1]))
+    # ax3.ticklabel_format(style='sci',axis='x',scilimits=(0,0))
+    # labels = [item.get_text() for item in ax3.get_yticklabels()]
+    # ax3.set_ytickslabels([str(round(float(label),2)) for label in labels])
+    # ax3.yticks(locs='right')
     ax3.invert_yaxis()
 
+    # color='tab:blue'
+    # plt.gca().invert_yaxis()
     ax4.plot(Seis_50SW.Seis, Seis_50SW.tSeis, 'g')
+    # ax4.set_title('50% Sw',fontsize=10)
     ax4.legend(['50% Sw'], loc=9, bbox_to_anchor=(0.5, 1.15))
+    # ax4.set_ylabel('Time (s)')
     ax4.set_xlabel('Amplitude', fontsize=9)
     ax4.xaxis.set_major_locator(plt.MaxNLocator(2))
     plt.ylim(top=max(Seis_0SW.tSeis[-1], Seis_50SW.tSeis[-1], Seis_100SW.tSeis[-1]))
     ax4.set_autoscale_on(False)
+    # plt.ticklabel_format(style='sci',axis='x',scilimits=(0,0))
+    # ax4.tick_params(axis='y',labelcolor=color)
     ax4.invert_yaxis()
     ax4.get_yaxis().set_visible(False)
 
+    # color='tab:blue'
+    # plt.gca().invert_yaxis()
     ax5.plot(Seis_100SW.Seis, Seis_100SW.tSeis)
+    # ax5.set_title('100% Sw',fontsize=10)
     ax5.legend(['100% Sw'], loc=9, bbox_to_anchor=(0.5, 1.15))
     ax5.xaxis.set_major_locator(plt.MaxNLocator(2))
+    # plt.ticklabel_format(style='sci',axis='x',scilimits=(0,0))
+    # ax4.set_ylabel('Time (s)')
     ax5.set_xlabel('Amplitude', fontsize=9)
     ax5.set_autoscale_on(False)
     plt.ylim(top=max(Seis_0SW.tSeis[-1], Seis_50SW.tSeis[-1], Seis_100SW.tSeis[-1]))
+    # ax5.tick_params(axis='y',labelcolor=color)
     ax5.invert_yaxis()
     ax5.tick_params(axis='y', right=1, left=0, labelright=1, labelleft=0)
     ax5.set_ylabel('Relative Time (s)')
     ax5.yaxis.set_label_position('right')
 
+    # plt.tight_layout()
+
     plt.subplots_adjust(left=0.125)
     plt.show()
-    
 
+    # new
     img = io.BytesIO()
     plt.savefig(img, format='png')
     img.seek(0)
