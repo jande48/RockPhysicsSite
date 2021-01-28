@@ -7,6 +7,8 @@ Thanks to Tad Smith for teaching the Gassman Fluid subsitution workflow.
 
 contact me with questions or comments!
 
+check it out at rockphysics.herokuapp.com/
+
 Jacob Anderson
 jacob.anderson10@gmail.com
 337 417 1529
